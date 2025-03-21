@@ -1,43 +1,43 @@
-pipeline{
-    agent any
-    stages{
-        stage("CODE"){
-            steps{
-                echo "clone code from github"
-                git url : "https://github.com/GeetaKhaladkar0/Notesapp_Nginix.git" , branch : "main"
-            }
-            
-            
-        }
-        stage("BUilD"){
-             steps{
-                 echo "building the image.."
-                 sh "docker build . -t notesapplication"
-            }
-           
-            
-        }
-        stage("PUSH IMAGE ON DOCKERHUB"){
-             steps{
-                echo "push image"
-                 withCredentials([usernamePassword( credentialsId: "dockerhub", usernameVariable: "dockerhubuser", passwordVariable: "dockerhubpass")])
-                {
-                    sh "docker tag notesapplication  ${env.dockerhubuser}/notesapplication:latest "
-                    sh "docker login -u ${env.dockerhubuser} -p ${env.dockerhubpass}"
-                    sh "docker push  ${env.dockerhubuser}/notesapplication:latest "
-                }
+@Library("shared") _
 
+pipeline {
+    agent {label 'SlaveNode'}
+
+    stages {
+        stage('welcome') {
+            steps {
+                script{
+                    hello()
+                }
             }
-            
-            
         }
-        stage("DEPLOY ON AWS"){
-             steps{
-                echo "deploy container"
-                sh "docker-compose down && docker-compose up -d "
+        stage('Code Clone') {
+            steps {
+                script{
+                    clone("https://github.com/GeetaKhaladkar0/Notesapp_Nginix.git","main")
+                }
             }
-            
+        }
+        stage('Build') {
+            steps {
+                script{
+                    codebuild("notes-app","latest","geetakhaladkar")
+                }
+            }
+        }
+        stage('Push Code') {
+            steps {
+                script{
+                    dockerpush("geetakhaladkar","notes-app","latest")
+                }
+                
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo 'Deploy code or run code'
+                sh "docker-compose up -d"
+            }
         }
     }
 }
-    
